@@ -1,10 +1,51 @@
-import Image from "next/image";
-import { CarCard, CustomFilter, Hero, SearchBar } from "@/components";
+"use client";
+import { CarCard, CustomFilter, Hero, SearchBar, ShowMore } from "@/components";
 import { fetchCars } from "@/utils";
 import { captureRejectionSymbol } from "events";
+import { fuels, manufacturers, yearsOfProduction } from "@/constants";
+import { useEffect, useState } from "react";
+import Image from 'next/image';
 
 export default async function Home() {
-  const allCars = await fetchCars();
+
+  const [allCars,setAllCars]= useState([]);
+  const [loading,setLoading]= useState([false]);
+
+  const [manufacturer,setManufacturer]= useState("");
+  const [model,setModel]= useState("");
+
+  const [fuel,setFuel]= useState("");
+  const [year,setYear]= useState(2022);
+
+  const [limit,setLimit]= useState(10);
+
+  const getCars = async () =>{
+
+setLoading(true);
+
+   try{ const results = await fetchCars({
+    manufacturer:manufacturer || '',
+    year:year || 2022,
+    fuel: fuel || '',
+    limit:limit || 10,
+    model:model || '',
+  });
+
+   }
+   catch(error)
+   {
+console.log(error);
+   } finally{
+     setLoading:(false);
+   }
+  }
+
+useEffect(() => {
+  console.log(fuel,year,limit,manufacturer,model)
+  getCars();
+
+},[fuel,year,limit,manufacturer,model])
+
   const isDataEmpty = !Array.isArray(allCars) || allCars.length < 1 || !allCars;
 
 
@@ -21,25 +62,51 @@ export default async function Home() {
 
         </div>
        <div className="home__filters">
-        <SearchBar />
+        <SearchBar setManufacturer={setManufacturer}
+        setModel={setModel}
+        
+        />
+
 
         <div className="home__filter-container">
-          <CustomFilter title ="fuel" />
-          <CustomFilter title="year" />
+          <CustomFilter title ="fuel" options={fuels}
+          setFilter={setFuel}/>
+          <CustomFilter title="year" options={yearsOfProduction} setFilter={setYear}/>
         </div>
 
        </div>
        
        {
-        !isDataEmpty ? (
+        allCars.length > 0 ? (
           <section>
             <div className="home__cars-wrapper">
            {allCars?.map((car) => (
           <CarCard car={car} />
 
            ))}
-
+           </div>
+           {loading && (
+            <div className="mt-16 w-full flex-center">
+              <Image
+              src="/loader.svg"
+              alt="loader"
+              width={50}
+              height={50}
+              className="object-contain"
+              />
             </div>
+           )}
+          
+          <ShowMore
+          
+          pageNumber={limit / 10}
+          isNext={limit  > allCars.length}
+          setLimit={setLimit}
+          
+          />
+
+
+            
           </section>
         ):  (
           <div className="home__erorr-container">
